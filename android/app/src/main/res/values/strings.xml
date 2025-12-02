@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Luka Points</string>
+    <string name="title_activity_main">Luka Points</string>
+    <string name="package_name">com.luka.points</string>
+    <string name="custom_url_scheme">com.luka.points</string>
+</resources>
