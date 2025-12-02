@@ -6,11 +6,15 @@ import { Bell, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { useNavigate } from "react-router-dom";
 import CoinRain from "./CoinRain";
+import { authApi } from "@/lib/api";
 
 interface User {
+  id?: string;
   email: string;
   name: string;
-  role: 'admin' | 'empresa' | 'estudiante';
+  firstName?: string;
+  lastName?: string;
+  role: string;
   lukaPoints?: number;
 }
 
@@ -23,9 +27,16 @@ const DashboardLayout = ({ user, children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
+    authApi.logout();
     navigate('/auth');
   };
+
+  const displayName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+  const roleDisplay = user.role === 'student' ? 'Estudiante' : 
+                      user.role === 'coordinator' ? 'Empresa' : 
+                      user.role === 'estudiante' ? 'Estudiante' :
+                      user.role === 'empresa' ? 'Empresa' :
+                      user.role === 'admin' ? 'Administrador' : user.role;
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -47,12 +58,12 @@ const DashboardLayout = ({ user, children }: DashboardLayoutProps) => {
                   <SidebarTrigger className="hidden md:flex flex-shrink-0" />
                   <Avatar className="h-10 w-10 flex-shrink-0">
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user.name.charAt(0).toUpperCase()}
+                      {displayName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <h2 className="font-semibold text-foreground truncate">{user.name}</h2>
-                    <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+                    <h2 className="font-semibold text-foreground truncate">{displayName}</h2>
+                    <p className="text-xs text-muted-foreground capitalize">{roleDisplay}</p>
                   </div>
                 </div>
 

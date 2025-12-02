@@ -2,11 +2,7 @@ import { Card } from '@/components/ui/card';
 import { BarChart3, TrendingUp, Users, Target } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 
-interface User {
-  email: string;
-  name: string;
-  role: 'admin' | 'empresa' | 'estudiante';
-}
+import { User } from '@/lib/api';
 
 interface RendimientoProps {
   user: User;

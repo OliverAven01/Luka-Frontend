@@ -8,19 +8,26 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
-import { initializeTestUsers } from "./lib/initTestUsers";
+import { authApi, User } from "./lib/api";
 
 // Admin Pages
 import AdminEmpresas from "./pages/admin/Empresas";
 import AdminUsuarios from "./pages/admin/Usuarios";
 import AdminMetricas from "./pages/admin/Metricas";
 import AdminPerfil from "./pages/admin/Perfil";
+import AdminConfiguracion from "./pages/admin/Configuracion";
+import AdminProveedores from "./pages/admin/Proveedores";
+import AdminProductos from "./pages/admin/ProductosAdmin";
+import AdminCupones from "./pages/admin/CuponesAdmin";
+import AdminReportes from "./pages/admin/Reportes";
 
 // Empresa Pages
 import EmpresaCampanas from "./pages/empresa/Campanas";
 import EmpresaCrear from "./pages/empresa/Crear";
 import EmpresaRendimiento from "./pages/empresa/Rendimiento";
 import EmpresaPerfil from "./pages/empresa/Perfil";
+import EmpresaTransacciones from "./pages/empresa/Transacciones";
+import EmpresaCupones from "./pages/empresa/Cupones";
 
 // Estudiante Pages
 import EstudianteCampanas from "./pages/estudiante/Campanas";
@@ -28,24 +35,10 @@ import EstudianteHistorial from "./pages/estudiante/Historial";
 import EstudianteRanking from "./pages/estudiante/Ranking";
 import EstudiantePerfil from "./pages/estudiante/Perfil";
 import TransactionHistory from "./pages/estudiante/TransactionHistory";
-
-interface User {
-  email: string;
-  name: string;
-  role: 'admin' | 'empresa' | 'estudiante';
-  lukaPoints?: number;
-}
-
-const getUserFromStorage = (): User | null => {
-  try {
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) return null;
-    return JSON.parse(storedUser);
-  } catch (error) {
-    console.error('Error parsing user from localStorage:', error);
-    return null;
-  }
-};
+import EstudianteProductos from "./pages/estudiante/Productos";
+import EstudianteMisiones from "./pages/estudiante/Misiones";
+import EstudianteCupones from "./pages/estudiante/Cupones";
+import EstudianteMisCampanas from "./pages/estudiante/MisCampanas";
 
 const ProtectedRoute = ({ 
   children, 
@@ -58,14 +51,19 @@ const ProtectedRoute = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const currentUser = getUserFromStorage();
+    const currentUser = authApi.getCurrentUser();
     setUser(currentUser);
     setLoading(false);
   }, []);
 
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
-  if (!allowedRoles.includes(user.role)) return <Navigate to="/dashboard" replace />;
+  
+  // Map roles for compatibility
+  const userRole = user.role === 'student' ? 'estudiante' : 
+                   user.role === 'coordinator' ? 'empresa' : user.role;
+  
+  if (!allowedRoles.includes(userRole)) return <Navigate to="/dashboard" replace />;
 
   return <>{children(user)}</>;
 };
@@ -73,16 +71,12 @@ const ProtectedRoute = ({
 const queryClient = new QueryClient();
 
 const App = () => {
-  useEffect(() => {
-    initializeTestUsers();
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -109,53 +103,108 @@ const App = () => {
                 {(user) => <AdminPerfil user={user} />}
               </ProtectedRoute>
             } />
+            <Route path="/dashboard/admin/configuracion" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                {(user) => <AdminConfiguracion user={user} />}
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/admin/proveedores" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                {(user) => <AdminProveedores user={user} />}
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/admin/productos" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                {(user) => <AdminProductos user={user} />}
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/admin/cupones" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                {(user) => <AdminCupones user={user} />}
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/admin/reportes" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                {(user) => <AdminReportes user={user} />}
+              </ProtectedRoute>
+            } />
 
             {/* Empresa Routes */}
             <Route path="/dashboard/empresa/campanas" element={
-              <ProtectedRoute allowedRoles={['empresa']}>
+              <ProtectedRoute allowedRoles={['empresa', 'coordinator']}>
                 {(user) => <EmpresaCampanas user={user} />}
               </ProtectedRoute>
             } />
             <Route path="/dashboard/empresa/crear" element={
-              <ProtectedRoute allowedRoles={['empresa']}>
+              <ProtectedRoute allowedRoles={['empresa', 'coordinator']}>
                 {(user) => <EmpresaCrear user={user} />}
               </ProtectedRoute>
             } />
             <Route path="/dashboard/empresa/rendimiento" element={
-              <ProtectedRoute allowedRoles={['empresa']}>
+              <ProtectedRoute allowedRoles={['empresa', 'coordinator']}>
                 {(user) => <EmpresaRendimiento user={user} />}
               </ProtectedRoute>
             } />
             <Route path="/dashboard/empresa/perfil" element={
-              <ProtectedRoute allowedRoles={['empresa']}>
+              <ProtectedRoute allowedRoles={['empresa', 'coordinator']}>
                 {(user) => <EmpresaPerfil user={user} />}
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/empresa/transacciones" element={
+              <ProtectedRoute allowedRoles={['empresa', 'coordinator']}>
+                {(user) => <EmpresaTransacciones user={user} />}
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/empresa/cupones" element={
+              <ProtectedRoute allowedRoles={['empresa', 'coordinator']}>
+                {(user) => <EmpresaCupones user={user} />}
               </ProtectedRoute>
             } />
 
             {/* Estudiante Routes */}
             <Route path="/dashboard/estudiante/campanas" element={
-              <ProtectedRoute allowedRoles={['estudiante']}>
+              <ProtectedRoute allowedRoles={['estudiante', 'student']}>
                 {(user) => <EstudianteCampanas user={user} />}
               </ProtectedRoute>
             } />
             <Route path="/dashboard/estudiante/historial" element={
-              <ProtectedRoute allowedRoles={['estudiante']}>
+              <ProtectedRoute allowedRoles={['estudiante', 'student']}>
                 {(user) => <EstudianteHistorial user={user} />}
               </ProtectedRoute>
             } />
             <Route path="/dashboard/estudiante/transacciones" element={
-              <ProtectedRoute allowedRoles={['estudiante']}>
+              <ProtectedRoute allowedRoles={['estudiante', 'student']}>
                 {(user) => <TransactionHistory user={user} />}
               </ProtectedRoute>
             } />
             <Route path="/dashboard/estudiante/ranking" element={
-              <ProtectedRoute allowedRoles={['estudiante']}>
+              <ProtectedRoute allowedRoles={['estudiante', 'student']}>
                 {(user) => <EstudianteRanking user={user} />}
               </ProtectedRoute>
             } />
             <Route path="/dashboard/estudiante/perfil" element={
-              <ProtectedRoute allowedRoles={['estudiante']}>
+              <ProtectedRoute allowedRoles={['estudiante', 'student']}>
                 {(user) => <EstudiantePerfil user={user} />}
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/estudiante/productos" element={
+              <ProtectedRoute allowedRoles={['estudiante', 'student']}>
+                {(user) => <EstudianteProductos user={user} />}
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/estudiante/misiones" element={
+              <ProtectedRoute allowedRoles={['estudiante', 'student']}>
+                {(user) => <EstudianteMisiones user={user} />}
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/estudiante/cupones" element={
+              <ProtectedRoute allowedRoles={['estudiante', 'student']}>
+                {(user) => <EstudianteCupones user={user} />}
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/estudiante/mis-campanas" element={
+              <ProtectedRoute allowedRoles={['estudiante', 'student']}>
+                {(user) => <EstudianteMisCampanas user={user} />}
               </ProtectedRoute>
             } />
 

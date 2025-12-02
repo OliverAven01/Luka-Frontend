@@ -2,12 +2,7 @@ import { Card } from '@/components/ui/card';
 import { Trophy, Medal, Award, TrendingUp } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 
-interface User {
-  email: string;
-  name: string;
-  role: 'admin' | 'empresa' | 'estudiante';
-  lukaPoints?: number;
-}
+import { User } from '@/lib/api';
 
 interface RankingProps {
   user: User;

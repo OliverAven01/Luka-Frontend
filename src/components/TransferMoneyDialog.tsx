@@ -8,22 +8,22 @@ import { QrCode, Scan, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import QRCodeGenerator from './QRCodeGenerator';
 import QRCodeScanner from './QRCodeScanner';
-import { transferPoints, getProfileByEmail } from '@/lib/supabase-db';
+import { transfersApi, ApiError } from '@/lib/api';
 
 interface TransferMoneyDialogProps {
-  currentUserEmail: string;
+  currentUserId: string;
   currentUserPoints: number;
   onTransferComplete: () => void;
 }
 
-const TransferMoneyDialog = ({ currentUserEmail, currentUserPoints, onTransferComplete }: TransferMoneyDialogProps) => {
+const TransferMoneyDialog = ({ currentUserId, currentUserPoints, onTransferComplete }: TransferMoneyDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [recipientEmail, setRecipientEmail] = useState('');
+  const [recipientId, setRecipientId] = useState('');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleTransferById = async () => {
-    if (!recipientEmail || !amount) {
+    if (!recipientId || !amount) {
       toast.error('Por favor completa todos los campos');
       return;
     }
@@ -39,62 +39,67 @@ const TransferMoneyDialog = ({ currentUserEmail, currentUserPoints, onTransferCo
       return;
     }
 
-    if (recipientEmail === currentUserEmail) {
+    if (recipientId === currentUserId) {
       toast.error('No puedes transferir a ti mismo');
       return;
     }
 
     setLoading(true);
     try {
-      const recipient = await getProfileByEmail(recipientEmail);
-      if (!recipient) {
-        toast.error('Usuario no encontrado');
-        setLoading(false);
-        return;
-      }
+      const response = await transfersApi.create({
+        sourceAccountId: parseInt(currentUserId),
+        destinationAccountId: parseInt(recipientId),
+        amount: transferAmount,
+      });
 
-      const result = await transferPoints(currentUserEmail, recipientEmail, transferAmount);
-      
-      if (result.success) {
-        toast.success(`¡${transferAmount} Luka Points enviados exitosamente!`);
-        setRecipientEmail('');
+      if (response.success) {
+        toast.success(`¡${transferAmount} Lukas enviados exitosamente!`);
+        setRecipientId('');
         setAmount('');
         setOpen(false);
         onTransferComplete();
-      } else {
-        toast.error(result.error || 'Error al realizar la transferencia');
       }
     } catch (error) {
-      toast.error('Error al realizar la transferencia');
+      if (error instanceof ApiError) {
+        toast.error(error.message || 'Error al realizar la transferencia');
+      } else {
+        toast.error('Error al realizar la transferencia');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleScanComplete = async (scannedEmail: string, scannedAmount: number) => {
+  const handleScanComplete = async (scannedId: string, scannedAmount: number) => {
     if (scannedAmount > currentUserPoints) {
       toast.error('No tienes suficientes Luka Points');
       return;
     }
 
-    if (scannedEmail === currentUserEmail) {
+    if (scannedId === currentUserId) {
       toast.error('No puedes transferir a ti mismo');
       return;
     }
 
     setLoading(true);
     try {
-      const result = await transferPoints(currentUserEmail, scannedEmail, scannedAmount);
-      
-      if (result.success) {
-        toast.success(`¡${scannedAmount} Luka Points enviados exitosamente!`);
+      const response = await transfersApi.create({
+        sourceAccountId: parseInt(currentUserId),
+        destinationAccountId: parseInt(scannedId),
+        amount: scannedAmount,
+      });
+
+      if (response.success) {
+        toast.success(`¡${scannedAmount} Lukas enviados exitosamente!`);
         setOpen(false);
         onTransferComplete();
-      } else {
-        toast.error(result.error || 'Error al realizar la transferencia');
       }
     } catch (error) {
-      toast.error('Error al realizar la transferencia');
+      if (error instanceof ApiError) {
+        toast.error(error.message || 'Error al realizar la transferencia');
+      } else {
+        toast.error('Error al realizar la transferencia');
+      }
     } finally {
       setLoading(false);
     }
@@ -112,7 +117,7 @@ const TransferMoneyDialog = ({ currentUserEmail, currentUserPoints, onTransferCo
         <DialogHeader>
           <DialogTitle>Transferir Luka Points</DialogTitle>
           <DialogDescription>
-            Envía puntos a otros estudiantes usando QR o su email
+            Envía puntos a otros estudiantes usando QR o su ID
           </DialogDescription>
         </DialogHeader>
 
@@ -120,8 +125,8 @@ const TransferMoneyDialog = ({ currentUserEmail, currentUserPoints, onTransferCo
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="by-id" className="text-xs sm:text-sm">
               <Send className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Por Email</span>
-              <span className="sm:hidden">Email</span>
+              <span className="hidden sm:inline">Por ID</span>
+              <span className="sm:hidden">ID</span>
             </TabsTrigger>
             <TabsTrigger value="generate-qr" className="text-xs sm:text-sm">
               <QrCode className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
@@ -137,28 +142,33 @@ const TransferMoneyDialog = ({ currentUserEmail, currentUserPoints, onTransferCo
 
           <TabsContent value="by-id" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="recipient">Email del destinatario</Label>
+              <Label htmlFor="recipient">ID de cuenta destino</Label>
               <Input
                 id="recipient"
-                type="email"
-                placeholder="estudiante@luka.com"
-                value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
+                type="number"
+                placeholder="Ej: 2"
+                value={recipientId}
+                onChange={(e) => setRecipientId(e.target.value)}
                 className="bg-input border-border"
               />
+              <div className="text-xs text-muted-foreground space-y-1 p-2 bg-muted/50 rounded">
+                <p className="font-medium">Cuentas disponibles:</p>
+                <p>• ID 1 = Juan (Estudiante)</p>
+                <p>• ID 2 = Carlos (Empresa)</p>
+              </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="amount">Cantidad de Luka Points</Label>
+              <Label htmlFor="amount">Cantidad de Lukas</Label>
               <Input
                 id="amount"
                 type="number"
-                placeholder="100"
+                placeholder="50"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="bg-input border-border"
               />
               <p className="text-xs text-muted-foreground">
-                Tienes {currentUserPoints} Luka Points disponibles
+                Tienes {currentUserPoints} Lukas disponibles
               </p>
             </div>
             <Button
@@ -166,12 +176,12 @@ const TransferMoneyDialog = ({ currentUserEmail, currentUserPoints, onTransferCo
               disabled={loading}
               className="w-full bg-gradient-primary text-primary-foreground"
             >
-              {loading ? 'Enviando...' : 'Enviar'}
+              {loading ? 'Enviando...' : 'Enviar Lukas'}
             </Button>
           </TabsContent>
 
           <TabsContent value="generate-qr" className="mt-4">
-            <QRCodeGenerator userEmail={currentUserEmail} />
+            <QRCodeGenerator userEmail={currentUserId} />
           </TabsContent>
 
           <TabsContent value="scan-qr" className="mt-4">

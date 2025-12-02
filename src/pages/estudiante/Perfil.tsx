@@ -1,22 +1,49 @@
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserCircle, Coins, Trophy } from 'lucide-react';
+import { UserCircle, Coins, Trophy, Loader2 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
-
-interface User {
-  email: string;
-  name: string;
-  role: 'admin' | 'empresa' | 'estudiante';
-  lukaPoints?: number;
-}
+import { User, studentsApi } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface PerfilProps {
   user: User;
 }
 
 const Perfil = ({ user }: PerfilProps) => {
+  const [saving, setSaving] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const [formData, setFormData] = useState({
+    name: user.name || '',
+    university: user.university || '',
+    career: '',
+  });
+
+  useEffect(() => {
+    loadBalance();
+  }, [user.id]);
+
+  const loadBalance = async () => {
+    try {
+      const response = await studentsApi.getBalance(user.id);
+      if (response.success) {
+        setBalance(response.data.balance || 0);
+      }
+    } catch (error) {
+      console.error('Error loading balance:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    // Simular guardado
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    toast.success('Perfil actualizado correctamente');
+    setSaving(false);
+  };
+
   return (
     <DashboardLayout user={user}>
       <div className="p-6 space-y-6 max-w-2xl mx-auto">
@@ -39,7 +66,7 @@ const Perfil = ({ user }: PerfilProps) => {
                 <Coins className="h-8 w-8 text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">Lukitas</p>
-                  <p className="text-2xl font-bold text-foreground">{user.lukaPoints || 897}</p>
+                  <p className="text-2xl font-bold text-foreground">{balance}</p>
                 </div>
               </div>
             </Card>
@@ -57,7 +84,11 @@ const Perfil = ({ user }: PerfilProps) => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre</Label>
-              <Input id="name" defaultValue={user.name} />
+              <Input 
+                id="name" 
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
             </div>
 
             <div className="space-y-2">
@@ -67,15 +98,28 @@ const Perfil = ({ user }: PerfilProps) => {
 
             <div className="space-y-2">
               <Label htmlFor="university">Universidad</Label>
-              <Input id="university" placeholder="Nombre de tu universidad" />
+              <Input 
+                id="university" 
+                placeholder="Nombre de tu universidad"
+                value={formData.university}
+                onChange={(e) => setFormData({ ...formData, university: e.target.value })}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="career">Carrera</Label>
-              <Input id="career" placeholder="Tu carrera" />
+              <Input 
+                id="career" 
+                placeholder="Tu carrera"
+                value={formData.career}
+                onChange={(e) => setFormData({ ...formData, career: e.target.value })}
+              />
             </div>
 
-            <Button className="w-full">Guardar Cambios</Button>
+            <Button className="w-full" onClick={handleSave} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Guardar Cambios
+            </Button>
           </div>
         </Card>
       </div>

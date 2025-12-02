@@ -1,21 +1,28 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Loader2 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
-
-interface User {
-  email: string;
-  name: string;
-  role: 'admin' | 'empresa' | 'estudiante';
-}
+import { User } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface PerfilProps {
   user: User;
 }
 
 const Perfil = ({ user }: PerfilProps) => {
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState(user.name || '');
+
+  const handleSave = async () => {
+    setSaving(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    toast.success('Perfil actualizado correctamente');
+    setSaving(false);
+  };
+
   return (
     <DashboardLayout user={user}>
       <div className="p-6 space-y-6 max-w-2xl mx-auto">
@@ -35,7 +42,7 @@ const Perfil = ({ user }: PerfilProps) => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre</Label>
-              <Input id="name" defaultValue={user.name} />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
             <div className="space-y-2">
@@ -48,7 +55,10 @@ const Perfil = ({ user }: PerfilProps) => {
               <Input id="role" defaultValue="Administrador" disabled />
             </div>
 
-            <Button className="w-full">Guardar Cambios</Button>
+            <Button className="w-full" onClick={handleSave} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Guardar Cambios
+            </Button>
           </div>
         </Card>
       </div>

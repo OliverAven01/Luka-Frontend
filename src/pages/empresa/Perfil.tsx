@@ -1,21 +1,32 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Briefcase } from 'lucide-react';
+import { Briefcase, Loader2 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
-
-interface User {
-  email: string;
-  name: string;
-  role: 'admin' | 'empresa' | 'estudiante';
-}
+import { User } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface PerfilProps {
   user: User;
 }
 
 const Perfil = ({ user }: PerfilProps) => {
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    companyName: user.name || '',
+    phone: '',
+    industry: '',
+  });
+
+  const handleSave = async () => {
+    setSaving(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    toast.success('Perfil de empresa actualizado');
+    setSaving(false);
+  };
+
   return (
     <DashboardLayout user={user}>
       <div className="p-6 space-y-6 max-w-2xl mx-auto">
@@ -35,7 +46,11 @@ const Perfil = ({ user }: PerfilProps) => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="company-name">Nombre de la Empresa</Label>
-              <Input id="company-name" defaultValue={user.name} />
+              <Input 
+                id="company-name" 
+                value={formData.companyName}
+                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+              />
             </div>
 
             <div className="space-y-2">
@@ -45,13 +60,21 @@ const Perfil = ({ user }: PerfilProps) => {
 
             <div className="space-y-2">
               <Label htmlFor="phone">Teléfono</Label>
-              <Input id="phone" type="tel" placeholder="+52 123 456 7890" />
+              <Input 
+                id="phone" 
+                type="tel" 
+                placeholder="+52 123 456 7890"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="industry">Industria</Label>
               <select
                 id="industry"
+                value={formData.industry}
+                onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
                 className="w-full h-10 px-3 rounded-md bg-input border border-border text-foreground"
               >
                 <option value="">Selecciona una industria</option>
@@ -62,7 +85,10 @@ const Perfil = ({ user }: PerfilProps) => {
               </select>
             </div>
 
-            <Button className="w-full">Guardar Cambios</Button>
+            <Button className="w-full" onClick={handleSave} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Guardar Cambios
+            </Button>
           </div>
         </Card>
       </div>

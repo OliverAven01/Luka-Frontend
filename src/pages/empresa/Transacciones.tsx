@@ -3,22 +3,24 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import DashboardLayout from '@/components/DashboardLayout';
 import { transfersApi, Transfer, User } from '@/lib/api';
-import { ArrowDownLeft, ArrowUpRight, Loader2 } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Loader2, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-interface TransactionHistoryProps {
+interface TransaccionesProps {
   user: User;
 }
 
-const TransactionHistory = ({ user }: TransactionHistoryProps) => {
+const Transacciones = ({ user }: TransaccionesProps) => {
   const [transactions, setTransactions] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadTransactions = async () => {
       try {
-        const response = await transfersApi.getByAccount(user.id);
+        // Empresa tiene accountId = 2
+        const accountId = user.id === '2' ? '2' : user.id;
+        const response = await transfersApi.getByAccount(accountId);
         if (response.success) {
           setTransactions(response.data);
         }
@@ -40,8 +42,9 @@ const TransactionHistory = ({ user }: TransactionHistoryProps) => {
   return (
     <DashboardLayout user={user}>
       <div className="p-4 sm:p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Historial de Transacciones</h1>
+        <div className="flex items-center gap-3">
+          <Receipt className="h-8 w-8 text-primary" />
+          <h1 className="text-2xl font-bold text-foreground">Transacciones</h1>
         </div>
 
         {loading ? (
@@ -50,6 +53,7 @@ const TransactionHistory = ({ user }: TransactionHistoryProps) => {
           </div>
         ) : transactions.length === 0 ? (
           <Card className="p-8 text-center">
+            <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">No hay transacciones registradas</p>
           </Card>
         ) : (
@@ -57,6 +61,7 @@ const TransactionHistory = ({ user }: TransactionHistoryProps) => {
             {transactions.map((transaction) => {
               const type = getTransactionType(transaction);
               const isSent = type === 'sent';
+              const dateStr = transaction.transferDate || transaction.createdAt || '';
 
               return (
                 <Card key={transaction.id} className="p-4">
@@ -83,17 +88,16 @@ const TransactionHistory = ({ user }: TransactionHistoryProps) => {
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {transaction.transferDate || transaction.createdAt 
-                            ? format(new Date(transaction.transferDate || transaction.createdAt || ''), "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es })
+                          {dateStr 
+                            ? format(new Date(dateStr), "d 'de' MMMM, yyyy", { locale: es })
                             : 'Sin fecha'}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className={`text-lg font-bold ${isSent ? 'text-destructive' : 'text-green-500'}`}>
-                        {isSent ? '-' : '+'}{transaction.amount}
+                        {isSent ? '-' : '+'}{transaction.amount} Lukas
                       </p>
-                      <p className="text-xs text-muted-foreground">Luka Points</p>
                     </div>
                   </div>
                 </Card>
@@ -106,4 +110,4 @@ const TransactionHistory = ({ user }: TransactionHistoryProps) => {
   );
 };
 
-export default TransactionHistory;
+export default Transacciones;

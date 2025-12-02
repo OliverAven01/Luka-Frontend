@@ -1,18 +1,46 @@
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { TrendingUp, Users, Building2, Coins } from 'lucide-react';
+import { TrendingUp, Users, Building2, Coins, Loader2 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
-
-interface User {
-  email: string;
-  name: string;
-  role: 'admin' | 'empresa' | 'estudiante';
-}
+import { adminApi, AdminStatistics, User } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface MetricasProps {
   user: User;
 }
 
 const Metricas = ({ user }: MetricasProps) => {
+  const [stats, setStats] = useState<AdminStatistics | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const response = await adminApi.getStatistics();
+      if (response.success) {
+        setStats(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading statistics:', error);
+      toast.error('Error al cargar las estadísticas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout user={user}>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout user={user}>
       <div className="p-6 space-y-6">
@@ -27,8 +55,12 @@ const Metricas = ({ user }: MetricasProps) => {
               <TrendingUp className="h-5 w-5 text-green-500" />
             </div>
             <p className="text-sm text-muted-foreground mb-1">Usuarios Totales</p>
-            <p className="text-3xl font-bold text-foreground">2,543</p>
-            <p className="text-xs text-green-500 mt-2">+12% vs mes anterior</p>
+            <p className="text-3xl font-bold text-foreground">
+              {stats?.totalUsers?.toLocaleString() || 0}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Estudiantes: {stats?.totalStudents || 0}
+            </p>
           </Card>
 
           <Card className="p-6">
@@ -38,9 +70,13 @@ const Metricas = ({ user }: MetricasProps) => {
               </div>
               <TrendingUp className="h-5 w-5 text-green-500" />
             </div>
-            <p className="text-sm text-muted-foreground mb-1">Empresas Activas</p>
-            <p className="text-3xl font-bold text-foreground">47</p>
-            <p className="text-xs text-green-500 mt-2">+5 nuevas este mes</p>
+            <p className="text-sm text-muted-foreground mb-1">Empresas</p>
+            <p className="text-3xl font-bold text-foreground">
+              {stats?.totalCompanies || 0}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Proveedores: {stats?.totalSuppliers || 0}
+            </p>
           </Card>
 
           <Card className="p-6">
@@ -50,9 +86,13 @@ const Metricas = ({ user }: MetricasProps) => {
               </div>
               <TrendingUp className="h-5 w-5 text-green-500" />
             </div>
-            <p className="text-sm text-muted-foreground mb-1">Lukitas Distribuidos</p>
-            <p className="text-3xl font-bold text-foreground">127.5K</p>
-            <p className="text-xs text-green-500 mt-2">+23% vs mes anterior</p>
+            <p className="text-sm text-muted-foreground mb-1">Lukas en Circulación</p>
+            <p className="text-3xl font-bold text-foreground">
+              {stats?.totalLukasInCirculation?.toLocaleString() || 0}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Gastados: {stats?.totalLukasSpent?.toLocaleString() || 0}
+            </p>
           </Card>
 
           <Card className="p-6">
@@ -63,30 +103,14 @@ const Metricas = ({ user }: MetricasProps) => {
               <TrendingUp className="h-5 w-5 text-green-500" />
             </div>
             <p className="text-sm text-muted-foreground mb-1">Campañas Activas</p>
-            <p className="text-3xl font-bold text-foreground">89</p>
-            <p className="text-xs text-green-500 mt-2">15 finalizan esta semana</p>
+            <p className="text-3xl font-bold text-foreground">
+              {stats?.activeCampaigns || 0}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Transacciones: {stats?.totalTransactions || 0}
+            </p>
           </Card>
         </div>
-
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4 text-foreground">Actividad Reciente</h3>
-          <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <span className="text-sm font-bold text-primary">#{i}</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Actividad de ejemplo {i}</p>
-                    <p className="text-sm text-muted-foreground">Hace {i} horas</p>
-                  </div>
-                </div>
-                <span className="text-sm text-muted-foreground">Ver detalles →</span>
-              </div>
-            ))}
-          </div>
-        </Card>
       </div>
     </DashboardLayout>
   );

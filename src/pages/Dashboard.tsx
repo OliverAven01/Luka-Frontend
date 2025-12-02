@@ -1,33 +1,16 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { authApi, User } from '@/lib/api';
 import DashboardEstudiante from './DashboardEstudiante';
 import DashboardEmpresa from './DashboardEmpresa';
 import DashboardAdmin from './DashboardAdmin';
-
-interface User {
-  email: string;
-  name: string;
-  role: 'admin' | 'empresa' | 'estudiante';
-  lukaPoints?: number;
-}
-
-const getUserFromStorage = (): User | null => {
-  try {
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) return null;
-    return JSON.parse(storedUser);
-  } catch (error) {
-    console.error('Error parsing user from localStorage:', error);
-    return null;
-  }
-};
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const currentUser = getUserFromStorage();
+    const currentUser = authApi.getCurrentUser();
     if (!currentUser) {
       navigate('/auth');
     } else {
@@ -44,7 +27,7 @@ const Dashboard = () => {
     return <DashboardAdmin user={user} />;
   }
   
-  if (user.role === 'empresa') {
+  if (user.role === 'empresa' || user.role === 'coordinator') {
     return <DashboardEmpresa user={user} />;
   }
   
